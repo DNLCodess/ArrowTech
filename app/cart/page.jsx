@@ -4,9 +4,9 @@ import { motion } from "framer-motion";
 import { Trash2, Plus, Minus, ShoppingBag } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import Button from "../../components/ui/Button";
-import { useCartStore } from "../../store/cart";
-import { formatPrice } from "../../lib/utils";
+import Button from "../../src/components/ui/Button";
+import { useCartStore } from "../../src/store/cart";
+import { formatPrice } from "../../src/lib/utils";
 
 const CartPage = () => {
   const router = useRouter();
