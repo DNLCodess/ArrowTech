@@ -11,8 +11,8 @@ import {
   Shield,
   RefreshCw,
 } from "lucide-react";
-import { useProductStore } from "../../store/products";
-import { useCartStore } from "../../store/cart";
+import { useProductStore } from "../../src/store/products";
+import { useCartStore } from "../../src/store/cart";
 import { formatPrice } from "../../src/lib/utils";
 import Button from "../../src/components/ui/Button";
 import LoadingSpinner from "../../src/components/ui/LoadingSpinner";
