@@ -81,16 +81,6 @@ eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export */ __webpac
 
 /***/ }),
 
-/***/ "(ssr)/./node_modules/swiper/modules/effect-fade.css":
-/*!*****************************************************!*\
-  !*** ./node_modules/swiper/modules/effect-fade.css ***!
-  \*****************************************************/
-/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
-
-eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export */ __webpack_require__.d(__webpack_exports__, {\n/* harmony export */   \"default\": () => (__WEBPACK_DEFAULT_EXPORT__)\n/* harmony export */ });\n/* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (\"2fa802ff191a\");\nif (false) {}\n//# sourceURL=[module]\n//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJ2ZXJzaW9uIjozLCJmaWxlIjoiKHNzcikvLi9ub2RlX21vZHVsZXMvc3dpcGVyL21vZHVsZXMvZWZmZWN0LWZhZGUuY3NzIiwibWFwcGluZ3MiOiI7Ozs7QUFBQSxpRUFBZSxjQUFjO0FBQzdCLElBQUksS0FBVSxFQUFFLEVBQXVCIiwic291cmNlcyI6WyJDOlxcVXNlcnNcXERcXERlc2t0b3BcXE1heW93YVxcQXJyb3dUZWNoXFxwcm9qZWN0XFxub2RlX21vZHVsZXNcXHN3aXBlclxcbW9kdWxlc1xcZWZmZWN0LWZhZGUuY3NzIl0sInNvdXJjZXNDb250ZW50IjpbImV4cG9ydCBkZWZhdWx0IFwiMmZhODAyZmYxOTFhXCJcbmlmIChtb2R1bGUuaG90KSB7IG1vZHVsZS5ob3QuYWNjZXB0KCkgfVxuIl0sIm5hbWVzIjpbXSwiaWdub3JlTGlzdCI6WzBdLCJzb3VyY2VSb290IjoiIn0=\n//# sourceURL=webpack-internal:///(ssr)/./node_modules/swiper/modules/effect-fade.css\n");
-
-/***/ }),
-
 /***/ "(ssr)/./node_modules/swiper/modules/effect-fade.mjs":
 /*!*****************************************************!*\
   !*** ./node_modules/swiper/modules/effect-fade.mjs ***!

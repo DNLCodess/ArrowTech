@@ -1,64 +1,110 @@
-import { useState, useEffect } from 'react'
-import { useParams } from 'react-router-dom'
-import { motion } from 'framer-motion'
-import { Star, Heart, ShoppingCart, Truck, Shield, RefreshCw } from 'lucide-react'
-import { useProductStore } from '../store/products'
-import { useCartStore } from '../store/cart'
-import { formatPrice } from '../lib/utils'
-import Button from '../components/ui/Button'
-import LoadingSpinner from '../components/ui/LoadingSpinner'
-import toast from 'react-hot-toast'
+"use client";
+
+import { useState, useEffect } from "react";
+import { useParams, useRouter } from "next/navigation";
+import { motion } from "framer-motion";
+import {
+  Star,
+  Heart,
+  ShoppingCart,
+  Truck,
+  Shield,
+  RefreshCw,
+} from "lucide-react";
+import { useProductStore } from "../../store/products";
+import { useCartStore } from "../../store/cart";
+import { formatPrice } from "../../lib/utils";
+import Button from "../../components/ui/Button";
+import LoadingSpinner from "../../components/ui/LoadingSpinner";
+import toast from "react-hot-toast";
 
 // Swiper imports
-import { Swiper, SwiperSlide } from 'swiper/react'
-import { Navigation, Pagination, Thumbs } from 'swiper/modules'
-import 'swiper/css'
-import 'swiper/css/navigation'
-import 'swiper/css/pagination'
-import 'swiper/css/thumbs'
+import { Swiper, SwiperSlide } from "swiper/react";
+import { Navigation, Pagination, Thumbs } from "swiper/modules";
+import "swiper/css";
+import "swiper/css/navigation";
+import "swiper/css/pagination";
+import "swiper/css/thumbs";
 
 const ProductDetailPage = () => {
-  const { id } = useParams()
-  const { getProductById, products } = useProductStore()
-  const { addItem } = useCartStore()
-  
-  const [product, setProduct] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [quantity, setQuantity] = useState(1)
-  const [thumbsSwiper, setThumbsSwiper] = useState(null)
-  const [activeTab, setActiveTab] = useState('description')
+  const params = useParams();
+  const router = useRouter();
+  const productId = params?.id;
+
+  const { getProductById, products } = useProductStore();
+  const { addItem } = useCartStore();
+
+  const [product, setProduct] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [quantity, setQuantity] = useState(1);
+  const [thumbsSwiper, setThumbsSwiper] = useState(null);
+  const [activeTab, setActiveTab] = useState("description");
+  const [mounted, setMounted] = useState(false);
+
+  // Handle hydration
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
+    if (!mounted || !productId) return;
+
     // Simulate API call
     const fetchProduct = async () => {
-      setLoading(true)
-      await new Promise(resolve => setTimeout(resolve, 500))
-      const foundProduct = getProductById(id)
-      setProduct(foundProduct)
-      setLoading(false)
-    }
+      setLoading(true);
+      await new Promise((resolve) => setTimeout(resolve, 300));
+      const foundProduct = getProductById(productId);
+      setProduct(foundProduct);
+      setLoading(false);
+    };
 
-    fetchProduct()
-  }, [id, getProductById])
+    fetchProduct();
+  }, [productId, getProductById, mounted]);
 
-  const handleAddToCart = () => {
-    if (!product) return
-    addItem(product, quantity)
-    toast.success(`${product.name} added to cart!`, {
-      icon: '🛒',
-    })
+  // Prevent hydration mismatch
+  if (!mounted) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gold"></div>
+      </div>
+    );
   }
 
+  const handleAddToCart = () => {
+    if (!product) return;
+
+    const success = addItem(product, quantity);
+    if (success) {
+      toast.success(`${product.name} added to cart!`, {
+        icon: "🛒",
+      });
+    } else {
+      toast.error("Failed to add item to cart");
+    }
+  };
+
+  const handleGoHome = () => {
+    router.push("/");
+  };
+
+  const handleGoToProducts = () => {
+    router.push("/products");
+  };
+
+  const handleRelatedProductClick = (relatedProductId) => {
+    router.push(`/products/${relatedProductId}`);
+  };
+
   const relatedProducts = products
-    .filter(p => p.id !== id && p.category === product?.category)
-    .slice(0, 4)
+    .filter((p) => p.id !== productId && p.category === product?.category)
+    .slice(0, 4);
 
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <LoadingSpinner size="lg" />
       </div>
-    )
+    );
   }
 
   if (!product) {
@@ -71,19 +117,17 @@ const ProductDetailPage = () => {
           <p className="text-gray-400 mb-8">
             The product you're looking for doesn't exist.
           </p>
-          <Button onClick={() => window.location.href = '/products'}>
-            Browse Products
-          </Button>
+          <Button onClick={handleGoToProducts}>Browse Products</Button>
         </div>
       </div>
-    )
+    );
   }
 
   const tabs = [
-    { id: 'description', label: 'Description' },
-    { id: 'specs', label: 'Specifications' },
-    { id: 'reviews', label: 'Reviews' }
-  ]
+    { id: "description", label: "Description" },
+    { id: "specs", label: "Specifications" },
+    { id: "reviews", label: "Reviews" },
+  ];
 
   return (
     <div className="min-h-screen py-8">
@@ -95,9 +139,23 @@ const ProductDetailPage = () => {
           className="mb-8"
         >
           <ol className="flex items-center space-x-2 text-sm text-gray-400">
-            <li><a href="/" className="hover:text-gold">Home</a></li>
+            <li>
+              <button
+                onClick={handleGoHome}
+                className="hover:text-gold transition-colors"
+              >
+                Home
+              </button>
+            </li>
             <li>/</li>
-            <li><a href="/products" className="hover:text-gold">Products</a></li>
+            <li>
+              <button
+                onClick={handleGoToProducts}
+                className="hover:text-gold transition-colors"
+              >
+                Products
+              </button>
+            </li>
             <li>/</li>
             <li className="text-white capitalize">{product.category}</li>
             <li>/</li>
@@ -112,41 +170,62 @@ const ProductDetailPage = () => {
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.6 }}
           >
-            <Swiper
-              modules={[Navigation, Pagination, Thumbs]}
-              thumbs={{ swiper: thumbsSwiper }}
-              navigation
-              pagination={{ clickable: true }}
-              className="mb-4"
-            >
-              {product.images.map((image, index) => (
-                <SwiperSlide key={index}>
-                  <img
-                    src={image}
-                    alt={`${product.name} - Image ${index + 1}`}
-                    className="w-full h-96 object-cover rounded-xl premium-glow"
-                  />
-                </SwiperSlide>
-              ))}
-            </Swiper>
+            {product.images && product.images.length > 0 ? (
+              <>
+                <Swiper
+                  modules={[Navigation, Pagination, Thumbs]}
+                  thumbs={{
+                    swiper:
+                      thumbsSwiper && !thumbsSwiper.destroyed
+                        ? thumbsSwiper
+                        : null,
+                  }}
+                  navigation
+                  pagination={{ clickable: true }}
+                  className="mb-4"
+                >
+                  {product.images.map((image, index) => (
+                    <SwiperSlide key={index}>
+                      <img
+                        src={image}
+                        alt={`${product.name} - Image ${index + 1}`}
+                        className="w-full h-96 object-cover rounded-xl premium-glow"
+                        onError={(e) => {
+                          e.target.src = "/images/placeholder-product.jpg";
+                        }}
+                      />
+                    </SwiperSlide>
+                  ))}
+                </Swiper>
 
-            <Swiper
-              onSwiper={setThumbsSwiper}
-              slidesPerView={4}
-              spaceBetween={10}
-              watchSlidesProgress
-              className="thumbs-swiper"
-            >
-              {product.images.map((image, index) => (
-                <SwiperSlide key={index}>
-                  <img
-                    src={image}
-                    alt={`${product.name} - Thumb ${index + 1}`}
-                    className="w-full h-20 object-cover rounded-lg cursor-pointer opacity-60 hover:opacity-100 transition-opacity"
-                  />
-                </SwiperSlide>
-              ))}
-            </Swiper>
+                {product.images.length > 1 && (
+                  <Swiper
+                    onSwiper={setThumbsSwiper}
+                    slidesPerView={Math.min(4, product.images.length)}
+                    spaceBetween={10}
+                    watchSlidesProgress
+                    className="thumbs-swiper"
+                  >
+                    {product.images.map((image, index) => (
+                      <SwiperSlide key={index}>
+                        <img
+                          src={image}
+                          alt={`${product.name} - Thumb ${index + 1}`}
+                          className="w-full h-20 object-cover rounded-lg cursor-pointer opacity-60 hover:opacity-100 transition-opacity"
+                          onError={(e) => {
+                            e.target.src = "/images/placeholder-product.jpg";
+                          }}
+                        />
+                      </SwiperSlide>
+                    ))}
+                  </Swiper>
+                )}
+              </>
+            ) : (
+              <div className="w-full h-96 bg-slate rounded-xl flex items-center justify-center">
+                <span className="text-gray-400">No image available</span>
+              </div>
+            )}
           </motion.div>
 
           {/* Product Info */}
@@ -163,15 +242,15 @@ const ProductDetailPage = () => {
                   <Star
                     key={i}
                     className={`w-5 h-5 ${
-                      i < Math.floor(product.rating)
-                        ? 'text-gold fill-current'
-                        : 'text-gray-400'
+                      i < Math.floor(product.rating || 0)
+                        ? "text-gold fill-current"
+                        : "text-gray-400"
                     }`}
                   />
                 ))}
               </div>
               <span className="text-white">
-                {product.rating} ({product.reviews} reviews)
+                {product.rating || 0} ({product.reviews || 0} reviews)
               </span>
             </div>
 
@@ -186,12 +265,14 @@ const ProductDetailPage = () => {
             </div>
 
             {/* Stock Status */}
-            <div className={`inline-flex items-center px-3 py-1 rounded-full text-sm ${
-              product.inStock 
-                ? 'bg-emerald/20 text-emerald border border-emerald/30' 
-                : 'bg-red-500/20 text-red-400 border border-red-500/30'
-            }`}>
-              {product.inStock ? 'In Stock' : 'Out of Stock'}
+            <div
+              className={`inline-flex items-center px-3 py-1 rounded-full text-sm ${
+                product.inStock
+                  ? "bg-emerald/20 text-emerald border border-emerald/30"
+                  : "bg-red-500/20 text-red-400 border border-red-500/30"
+              }`}
+            >
+              {product.inStock ? "In Stock" : "Out of Stock"}
             </div>
 
             {/* Description */}
@@ -207,15 +288,17 @@ const ProductDetailPage = () => {
                   <button
                     onClick={() => setQuantity(Math.max(1, quantity - 1))}
                     className="px-3 py-2 text-gold hover:bg-gold/10 transition-colors"
+                    disabled={quantity <= 1}
                   >
                     -
                   </button>
-                  <span className="px-4 py-2 text-white border-x border-gold/30">
+                  <span className="px-4 py-2 text-white border-x border-gold/30 min-w-[3rem] text-center">
                     {quantity}
                   </span>
                   <button
                     onClick={() => setQuantity(quantity + 1)}
                     className="px-3 py-2 text-gold hover:bg-gold/10 transition-colors"
+                    disabled={quantity >= 10}
                   >
                     +
                   </button>
@@ -231,7 +314,7 @@ const ProductDetailPage = () => {
                   <ShoppingCart className="w-5 h-5 mr-2" />
                   Add to Cart
                 </Button>
-                <Button variant="secondary">
+                <Button variant="secondary" className="px-4">
                   <Heart className="w-5 h-5" />
                 </Button>
               </div>
@@ -264,15 +347,15 @@ const ProductDetailPage = () => {
         >
           <div className="bg-slate rounded-xl premium-glow overflow-hidden">
             {/* Tab Headers */}
-            <div className="flex border-b border-gold/20">
+            <div className="flex border-b border-gold/20 overflow-x-auto">
               {tabs.map((tab) => (
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`px-6 py-4 font-semibold transition-colors ${
+                  className={`px-6 py-4 font-semibold transition-colors whitespace-nowrap ${
                     activeTab === tab.id
-                      ? 'text-gold border-b-2 border-gold'
-                      : 'text-gray-400 hover:text-white'
+                      ? "text-gold border-b-2 border-gold"
+                      : "text-gray-400 hover:text-white"
                   }`}
                 >
                   {tab.label}
@@ -282,32 +365,42 @@ const ProductDetailPage = () => {
 
             {/* Tab Content */}
             <div className="p-6">
-              {activeTab === 'description' && (
+              {activeTab === "description" && (
                 <div className="prose prose-invert max-w-none">
                   <p className="text-gray-300 leading-relaxed">
-                    {product.description}
+                    {product.description || "No description available."}
                   </p>
                 </div>
               )}
 
-              {activeTab === 'specs' && (
+              {activeTab === "specs" && (
                 <div className="space-y-4">
-                  {Object.entries(product.specs).map(([key, value]) => (
-                    <div key={key} className="flex justify-between py-2 border-b border-gold/10">
-                      <span className="text-gray-400 capitalize font-medium">
-                        {key.replace(/([A-Z])/g, ' $1').trim()}
-                      </span>
-                      <span className="text-white">{value}</span>
-                    </div>
-                  ))}
+                  {product.specs && Object.keys(product.specs).length > 0 ? (
+                    Object.entries(product.specs).map(([key, value]) => (
+                      <div
+                        key={key}
+                        className="flex justify-between py-2 border-b border-gold/10 last:border-b-0"
+                      >
+                        <span className="text-gray-400 capitalize font-medium">
+                          {key.replace(/([A-Z])/g, " $1").trim()}
+                        </span>
+                        <span className="text-white">{value}</span>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-gray-400">
+                      No specifications available.
+                    </p>
+                  )}
                 </div>
               )}
 
-              {activeTab === 'reviews' && (
+              {activeTab === "reviews" && (
                 <div className="text-center py-8">
                   <p className="text-gray-400">
-                    Reviews feature coming soon. This product has {product.reviews} reviews 
-                    with an average rating of {product.rating} stars.
+                    Reviews feature coming soon. This product has{" "}
+                    {product.reviews || 0} reviews with an average rating of{" "}
+                    {product.rating || 0} stars.
                   </p>
                 </div>
               )}
@@ -327,30 +420,37 @@ const ProductDetailPage = () => {
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               {relatedProducts.map((relatedProduct) => (
-                <div
+                <motion.div
                   key={relatedProduct.id}
+                  whileHover={{ y: -5 }}
                   className="bg-slate rounded-xl p-4 premium-glow hover:shadow-xl transition-all duration-300 cursor-pointer"
-                  onClick={() => window.location.href = `/product/${relatedProduct.id}`}
+                  onClick={() => handleRelatedProductClick(relatedProduct.id)}
                 >
                   <img
-                    src={relatedProduct.images[0]}
+                    src={
+                      relatedProduct.images?.[0] ||
+                      "/images/placeholder-product.jpg"
+                    }
                     alt={relatedProduct.name}
                     className="w-full h-40 object-cover rounded-lg mb-4"
+                    onError={(e) => {
+                      e.target.src = "/images/placeholder-product.jpg";
+                    }}
                   />
-                  <h3 className="font-semibold text-white mb-2">
+                  <h3 className="font-semibold text-white mb-2 truncate">
                     {relatedProduct.name}
                   </h3>
                   <p className="text-gold font-bold">
                     {formatPrice(relatedProduct.price)}
                   </p>
-                </div>
+                </motion.div>
               ))}
             </div>
           </motion.section>
         )}
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default ProductDetailPage
+export default ProductDetailPage;
