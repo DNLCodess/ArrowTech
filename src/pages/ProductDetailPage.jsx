@@ -13,9 +13,9 @@ import {
 } from "lucide-react";
 import { useProductStore } from "../../store/products";
 import { useCartStore } from "../../store/cart";
-import { formatPrice } from "../../lib/utils";
-import Button from "../../components/ui/Button";
-import LoadingSpinner from "../../components/ui/LoadingSpinner";
+import { formatPrice } from "../../src/lib/utils";
+import Button from "../../src/components/ui/Button";
+import LoadingSpinner from "../../src/components/ui/LoadingSpinner";
 import toast from "react-hot-toast";
 
 // Swiper imports
