@@ -1,5 +1,5 @@
 // app/checkout/result/page.js - Payment Result Page
-("use client");
+"use client";
 
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
