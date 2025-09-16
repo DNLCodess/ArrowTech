@@ -45,7 +45,6 @@ export const useCartStore = create(
             });
           }
 
-          console.log("Updated cart items:", get().items);
           return true; // Success
         } catch (error) {
           console.error("Error adding item to cart:", error);
@@ -63,7 +62,7 @@ export const useCartStore = create(
           set({
             items: get().items.filter((item) => item.id !== productId),
           });
-          console.log("Updated cart items after remove:", get().items);
+
           return true;
         } catch (error) {
           console.error("Error removing item:", error);
@@ -88,7 +87,7 @@ export const useCartStore = create(
               item.id === productId ? { ...item, quantity } : item
             ),
           });
-          console.log("Updated cart items after quantity change:", get().items);
+
           return true;
         } catch (error) {
           console.error("Error updating quantity:", error);
@@ -99,7 +98,7 @@ export const useCartStore = create(
       clearCart: () => {
         try {
           set({ items: [] });
-          console.log("Cart cleared");
+
           return true;
         } catch (error) {
           console.error("Error clearing cart:", error);
@@ -113,7 +112,7 @@ export const useCartStore = create(
           if (typeof window !== "undefined") {
             localStorage.removeItem("arrowtech-cart-storage");
           }
-          console.log("Cart reset and localStorage cleared");
+
           return true;
         } catch (error) {
           console.error("Error resetting cart:", error);
@@ -146,18 +145,16 @@ export const useCartStore = create(
 
       total: () => {
         const items = get().items;
-        console.log("Items for total calculation:", items);
+
         const total = items.reduce((acc, item, index) => {
           const price = Number(item.price || 0);
           const quantity = Number(item.quantity || 0);
           const itemTotal = price * quantity;
-          console.log(
-            `Item ${index}: price=${price}, quantity=${quantity}, itemTotal=${itemTotal}`
-          );
+
           return acc + itemTotal;
         }, 0);
         const formattedTotal = Number(total.toFixed(2));
-        console.log("Calculated total:", formattedTotal);
+
         return formattedTotal;
       },
     }),

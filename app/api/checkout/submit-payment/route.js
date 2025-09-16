@@ -1,48 +1,48 @@
-// app/api/checkout/submit-payment/route.js
 import { NextResponse } from "next/server";
 
 export async function POST(request) {
   try {
-    const { sessionId, paymentData } = await request.json();
+    const { sessionId, paymentData, amount } = await request.json();
 
-    if (!sessionId || !paymentData) {
+    if (!sessionId || !paymentData || !amount) {
       return NextResponse.json(
-        { error: "Session ID and payment data are required" },
+        { error: "Session ID, payment data, and amount are required" },
         { status: 400 }
       );
     }
 
-    // For session flow, we typically don't need to make additional /payments calls
-    // as the session handles the payment processing
-    // This endpoint can be used for advanced flows or additional processing
+    // For Sessions flow, construct the payment request
+    const paymentRequest = {
+      merchantAccount: process.env.ADYEN_MERCHANT_ACCOUNT,
+      amount: amount, // Use the amount from the request body
+      reference: `payment-${Date.now()}`,
+      paymentMethod: paymentData.paymentMethod,
+      returnUrl:
+        paymentData.returnUrl ||
+        `${process.env.NEXT_PUBLIC_BASE_URL}/checkout/result`,
+      sessionId: sessionId, // Include the session ID
+    };
 
     const response = await fetch(
-      "https://checkout-test.adyen.com/v71/payments",
+      `https://checkout-test.adyen.com/${
+        process.env.ADYEN_API_VERSION || "v71"
+      }/payments`,
       {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "x-api-key": process.env.ADYEN_API_KEY,
+          "X-API-Key": process.env.ADYEN_API_KEY,
         },
-        body: JSON.stringify({
-          merchantAccount: process.env.ADYEN_MERCHANT_ACCOUNT,
-          paymentMethod: paymentData.paymentMethod,
-          amount: paymentData.amount,
-          reference: `payment-${Date.now()}`,
-          returnUrl:
-            paymentData.returnUrl ||
-            `${request.nextUrl.origin}/checkout/result`,
-          channel: "Web",
-        }),
+        body: JSON.stringify(paymentRequest),
       }
     );
 
     const data = await response.json();
 
     if (!response.ok) {
-      console.error("Adyen payment submission failed:", data);
+      console.error("Adyen payment failed:", data);
       return NextResponse.json(
-        { error: "Payment submission failed", details: data },
+        { error: "Payment failed", details: data },
         { status: response.status }
       );
     }

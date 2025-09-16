@@ -29,13 +29,6 @@ const CartPage = () => {
     setMounted(true);
   }, []);
 
-  useEffect(() => {
-    if (mounted) {
-      console.log("Cart items:", items);
-      console.log("Total:", total);
-    }
-  }, [items, total, mounted]);
-
   // Prevent hydration mismatch
   if (!mounted) {
     return (

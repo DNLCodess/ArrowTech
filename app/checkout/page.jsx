@@ -3,21 +3,24 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { ArrowLeft, CreditCard, ShoppingBag } from "lucide-react";
+import { ArrowLeft, CreditCard, ShoppingBag, CheckCircle } from "lucide-react";
 import { useCartStore } from "../../src/store/cart";
 import { formatPrice } from "../../src/lib/utils";
 import Button from "../../src/components/ui/Button";
 import toast from "react-hot-toast";
 
 const CheckoutPage = () => {
+  console.log("CheckoutPage: Component rendering");
   const router = useRouter();
   const dropinRef = useRef(null);
   const checkoutRef = useRef(null);
-
+  const sessionRef = useRef(null); // Sole source of truth for session
   const [mounted, setMounted] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [session, setSession] = useState(null);
   const [paymentInProgress, setPaymentInProgress] = useState(false);
+  const [showPaymentForm, setShowPaymentForm] = useState(false);
+  const [paymentSuccess, setPaymentSuccess] = useState(false); // New state for success UI
+  const [paymentDetails, setPaymentDetails] = useState(null); // Store payment result for success UI
 
   const items = useCartStore((state) => state.items);
   const clearCart = useCartStore((state) => state.clearCart);
@@ -27,199 +30,527 @@ const CheckoutPage = () => {
   const total = totalFn();
   const itemsCount = itemsCountFn();
 
+  console.log("CheckoutPage: Initial state", {
+    mounted,
+    loading,
+    paymentInProgress,
+    showPaymentForm,
+    paymentSuccess,
+    itemsCount: items.length,
+    total,
+  });
+
   useEffect(() => {
+    console.log("CheckoutPage: useEffect for mounting triggered");
     setMounted(true);
+    console.log("CheckoutPage: Mounted set to true");
   }, []);
 
   useEffect(() => {
-    if (!mounted) return;
+    console.log(
+      "CheckoutPage: useEffect for payment initialization triggered",
+      {
+        mounted,
+        paymentSuccess,
+      }
+    );
 
-    // Redirect to cart if empty
-    if (items.length === 0 || total <= 0) {
+    if (!mounted) {
+      console.log("CheckoutPage: Skipping initialization, not mounted");
+      return;
+    }
+
+    // Redirect to cart if empty and not showing success UI
+    if (items.length === 0 && !paymentSuccess) {
+      console.log(
+        "CheckoutPage: Cart is empty and no payment success, redirecting to /cart"
+      );
       toast.error("Your cart is empty");
       router.push("/cart");
       return;
     }
 
-    initPayment();
-  }, [mounted, items, total]);
+    // Skip initialization if payment is already successful
+    if (paymentSuccess) {
+      console.log(
+        "CheckoutPage: Payment already successful, skipping initialization"
+      );
+      return;
+    }
+
+    // Show payment form first, then initialize payment after a short delay
+    console.log("CheckoutPage: Setting showPaymentForm to true");
+    setShowPaymentForm(true);
+    console.log("CheckoutPage: Scheduling initPayment with 50ms delay");
+    const timer = setTimeout(() => {
+      console.log("CheckoutPage: Executing initPayment");
+      initPayment();
+    }, 50);
+
+    return () => {
+      console.log("CheckoutPage: Cleaning up useEffect, clearing timer");
+      clearTimeout(timer);
+    };
+  }, [mounted, paymentSuccess]);
 
   const initPayment = async () => {
+    console.log("initPayment: Starting payment initialization", {
+      itemsCount: items.length,
+      total,
+      paymentSuccess,
+    });
+
+    // Guard against empty cart or successful payment
+    if (items.length === 0 || paymentSuccess) {
+      console.log(
+        "initPayment: Skipping due to empty cart or payment already successful"
+      );
+      setLoading(false);
+      console.log("initPayment: Set loading to false");
+      return;
+    }
+
     try {
       setLoading(true);
+      console.log("initPayment: Set loading to true");
 
       // Create payment session
-      const response = await fetch("/api/checkout/create-session", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          amount: Math.round(total * 108), // Include tax, convert to cents
+      console.log(
+        "initPayment: Sending request to /api/checkout/create-session",
+        {
+          amount: Math.round(total * 100),
           currency: "USD",
           returnUrl: `${window.location.origin}/checkout/result`,
           items: items.map((item) => ({
             id: item.id,
             description: item.name,
-            amountIncludingTax: Math.round(item.price * item.quantity * 108),
+            amountIncludingTax: Math.round(item.price * item.quantity * 100),
+            quantity: item.quantity,
+          })),
+        }
+      );
+
+      const response = await fetch("/api/checkout/create-session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          amount: Math.round(total * 100),
+          currency: "USD",
+          returnUrl: `${window.location.origin}/checkout/result`,
+          items: items.map((item) => ({
+            id: item.id,
+            description: item.name,
+            amountIncludingTax: Math.round(item.price * item.quantity * 100),
             quantity: item.quantity,
           })),
         }),
       });
 
-      if (!response.ok) {
-        throw new Error("Failed to create payment session");
+      console.log("initPayment: Session API response received", {
+        status: response.status,
+      });
+
+      const sessionData = await response.json();
+      console.log("initPayment: Session API response data", sessionData);
+
+      if (!response.ok || sessionData.error) {
+        console.error("initPayment: Failed to create session", {
+          status: response.status,
+          error: sessionData.error,
+        });
+        throw new Error(
+          sessionData.error ||
+            `Failed to create payment session (Status: ${response.status})`
+        );
       }
 
-      const data = await response.json();
-      setSession(data);
+      if (!sessionData.id || !sessionData.sessionData) {
+        console.error(
+          "initPayment: Invalid session data structure",
+          sessionData
+        );
+        throw new Error("Invalid session data received from server");
+      }
+
+      console.log("initPayment: Adyen session created successfully", {
+        id: sessionData.id,
+        sessionData: sessionData.sessionData ? "exists" : "missing",
+      });
+
+      // Store session in ref only
+      sessionRef.current = sessionData;
+      console.log("initPayment: Session ref updated", {
+        sessionId: sessionData.id,
+      });
 
       // Initialize Adyen Checkout
-      const AdyenCheckout = (await import("@adyen/adyen-web")).default;
+      console.log("initPayment: Importing AdyenCheckout and CSS");
+      const { default: AdyenCheckout } = await import("@adyen/adyen-web");
       await import("@adyen/adyen-web/dist/adyen.css");
+      console.log("initPayment: AdyenCheckout and CSS imported");
 
-      const checkout = await AdyenCheckout({
+      const configuration = {
         environment: process.env.NEXT_PUBLIC_ADYEN_ENV || "test",
         clientKey: process.env.NEXT_PUBLIC_ADYEN_CLIENT_KEY,
         session: {
-          id: data.id,
-          sessionData: data.sessionData,
+          id: sessionData.id,
+          sessionData: sessionData.sessionData,
         },
-        onSubmit: handleSubmit,
-        onAdditionalDetails: handleAdditionalDetails,
-        onPaymentCompleted: handlePaymentCompleted,
-        onError: handleError,
-        // Premium styling
+        onPaymentCompleted: (result, component) => {
+          console.log("initPayment: onPaymentCompleted triggered", { result });
+          handlePaymentResult(result, component);
+        },
+        onError: (error, component) => {
+          console.error("initPayment: Adyen error occurred", { error });
+          handleError(error);
+        },
         paymentMethodsConfiguration: {
           card: {
             hasHolderName: true,
             holderNameRequired: true,
             billingAddressRequired: false,
-            styles: {
-              base: {
-                color: "#ffffff",
-                fontSize: "16px",
-                fontFamily: '"Inter", sans-serif',
-              },
-              error: {
-                color: "#ff6b6b",
-              },
-              validated: {
-                color: "#51cf66",
-              },
-              placeholder: {
-                color: "#9ca3af",
-              },
-            },
           },
+        },
+      };
+
+      console.log(
+        "initPayment: Creating Adyen Checkout instance with configuration",
+        {
+          environment: configuration.environment,
+          clientKey: configuration.clientKey,
+          sessionId: configuration.session.id,
+        }
+      );
+
+      const checkout = await AdyenCheckout(configuration);
+      checkoutRef.current = checkout;
+      console.log("initPayment: Adyen Checkout instance created");
+
+      console.log("initPayment: Creating Drop-in component");
+      const dropin = checkout.create("dropin", {
+        onSubmit: (state, component) => {
+          console.log("initPayment: Drop-in onSubmit triggered", {
+            isValid: state.isValid,
+          });
+          handleSubmit(state, component);
+        },
+        onAdditionalDetails: (state, component) => {
+          console.log("initPayment: Drop-in onAdditionalDetails triggered", {
+            state,
+          });
+          handleAdditionalDetails(state, component);
         },
       });
 
-      checkoutRef.current = checkout;
+      // Mount with retry logic
+      let attempts = 0;
+      const maxAttempts = 15;
 
-      // Mount Drop-in
-      const dropin = checkout.create("dropin").mount(dropinRef.current);
+      const tryMount = () => {
+        if (dropinRef.current) {
+          console.log("initPayment: Mounting Drop-in component");
+          dropin.mount(dropinRef.current);
+          console.log("initPayment: Drop-in mounted successfully");
+        } else if (attempts < maxAttempts) {
+          attempts++;
+          console.log(`initPayment: Mount attempt ${attempts}/${maxAttempts}`);
+          setTimeout(tryMount, 100);
+        } else {
+          console.error(
+            "initPayment: Drop-in container not found after max attempts"
+          );
+          throw new Error(
+            "Drop-in container not found after multiple attempts"
+          );
+        }
+      };
+
+      console.log("initPayment: Starting Drop-in mount process");
+      tryMount();
     } catch (error) {
-      console.error("Payment initialization error:", error);
-      toast.error("Failed to initialize payment. Please try again.");
+      console.error("initPayment: Payment initialization error", {
+        error: error.message,
+      });
+      if (!paymentSuccess) {
+        toast.error(
+          error.message || "Failed to initialize payment. Please try again."
+        );
+      }
+      sessionRef.current = null; // Clear ref on error
+      console.log("initPayment: Cleared session ref due to error");
     } finally {
       setLoading(false);
+      console.log("initPayment: Set loading to false");
     }
   };
 
   const handleSubmit = async (state, component) => {
-    try {
-      setPaymentInProgress(true);
+    console.log("handleSubmit: Starting payment submission", {
+      isValid: state.isValid,
+      paymentData: state.data,
+    });
 
-      if (!state.isValid) {
-        toast.error("Please fill in all required fields");
+    try {
+      // Use the ref directly
+      const currentSession = sessionRef.current;
+      console.log("handleSubmit: Current session from ref", {
+        sessionId: currentSession?.id,
+      });
+
+      setPaymentInProgress(true);
+      console.log("handleSubmit: Set paymentInProgress to true");
+
+      // Check if session is available
+      if (!currentSession || !currentSession.id) {
+        console.error("handleSubmit: Session not available", {
+          currentSession,
+        });
+        toast.error("Payment session not ready. Please try again.");
+        setPaymentInProgress(false);
+        console.log(
+          "handleSubmit: Set paymentInProgress to false due to missing session"
+        );
         return;
       }
 
+      if (!state.isValid) {
+        console.log("handleSubmit: Invalid payment data, showing error toast");
+        toast.error("Please fill in all required fields");
+        setPaymentInProgress(false);
+        console.log(
+          "handleSubmit: Set paymentInProgress to false due to invalid data"
+        );
+        return;
+      }
+
+      console.log(
+        "handleSubmit: Submitting payment to /api/checkout/submit-payment"
+      );
       const response = await fetch("/api/checkout/submit-payment", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          sessionId: session.id,
+          sessionId: currentSession.id,
           paymentData: state.data,
+          amount: currentSession.amount, // Include the amount from the session
         }),
       });
 
+      console.log("handleSubmit: Submit payment response received", {
+        status: response.status,
+      });
+
       const result = await response.json();
+      console.log("handleSubmit: Submit payment response data", result);
+
+      if (!response.ok) {
+        console.error("handleSubmit: Payment submission failed", {
+          status: response.status,
+          error: result.error,
+        });
+        throw new Error(result.error || "Payment submission failed");
+      }
 
       if (result.action) {
+        console.log("handleSubmit: Handling Adyen action", {
+          action: result.action,
+        });
         component.handleAction(result.action);
       } else {
-        handlePaymentResult(result);
+        console.log("handleSubmit: Handling payment result", { result });
+        handlePaymentResult(result, component);
       }
     } catch (error) {
-      console.error("Payment submission error:", error);
-      toast.error("Payment failed. Please try again.");
+      console.error("handleSubmit: Payment submission error", {
+        error: error.message,
+      });
+      const errorMessage = error.message || "Payment failed. Please try again.";
+      toast.error(errorMessage);
       setPaymentInProgress(false);
+      console.log("handleSubmit: Set paymentInProgress to false due to error");
     }
   };
 
   const handleAdditionalDetails = async (state, component) => {
+    console.log(
+      "handleAdditionalDetails: Starting additional details submission",
+      {
+        state,
+      }
+    );
+
     try {
+      // Use the ref directly
+      const currentSession = sessionRef.current;
+      console.log("handleAdditionalDetails: Current session from ref", {
+        sessionId: currentSession?.id,
+      });
+
+      // Check if session is available
+      if (!currentSession || !currentSession.id) {
+        console.error("handleAdditionalDetails: Session not available", {
+          currentSession,
+        });
+        toast.error("Payment session not ready. Please try again.");
+        setPaymentInProgress(false);
+        console.log(
+          "handleAdditionalDetails: Set paymentInProgress to false due to missing session"
+        );
+        return;
+      }
+
+      console.log(
+        "handleAdditionalDetails: Submitting details to /api/checkout/submit-details"
+      );
       const response = await fetch("/api/checkout/submit-details", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          sessionId: session.id,
+          sessionId: currentSession.id,
           details: state.data,
         }),
       });
 
+      console.log("handleAdditionalDetails: Submit details response received", {
+        status: response.status,
+      });
+
+      if (!response.ok) {
+        console.error(
+          "handleAdditionalDetails: Additional details submission failed",
+          {
+            status: response.status,
+          }
+        );
+        throw new Error("Additional details submission failed");
+      }
+
       const result = await response.json();
+      console.log(
+        "handleAdditionalDetails: Submit details response data",
+        result
+      );
 
       if (result.action) {
+        console.log("handleAdditionalDetails: Handling Adyen action", {
+          action: result.action,
+        });
         component.handleAction(result.action);
       } else {
-        handlePaymentResult(result);
+        console.log("handleAdditionalDetails: Handling payment result", {
+          result,
+        });
+        handlePaymentResult(result, component);
       }
     } catch (error) {
-      console.error("Additional details error:", error);
+      console.error("handleAdditionalDetails: Additional details error", {
+        error: error.message,
+      });
       toast.error("Payment verification failed. Please try again.");
       setPaymentInProgress(false);
+      console.log(
+        "handleAdditionalDetails: Set paymentInProgress to false due to error"
+      );
     }
   };
 
   const handlePaymentCompleted = (result, component) => {
-    handlePaymentResult(result);
+    console.log(
+      "handlePaymentCompleted: Payment completed callback triggered",
+      { result }
+    );
+    handlePaymentResult(result, component);
   };
 
-  const handlePaymentResult = (result) => {
+  const handlePaymentResult = (result, component) => {
+    console.log("handlePaymentResult: Processing payment result", {
+      resultCode: result.resultCode,
+      pspReference: result.pspReference,
+      refusalReason: result.refusalReason,
+    });
+
+    const errorMessages = {
+      "CVC Declined":
+        "The CVC code you entered is incorrect. Please check and try again.",
+      "Card Expired": "Your card has expired. Please use a different card.",
+      "Issuer Declined":
+        "Your card issuer declined the transaction. Please contact your bank or try another card.",
+      Refused:
+        "The payment was declined. Please verify your card details or try a different payment method.",
+    };
+
     if (
       result.resultCode === "Authorised" ||
       result.resultCode === "Received"
     ) {
-      // Payment successful
-      clearCart();
-      toast.success("Payment successful!");
-      router.push(
-        `/checkout/result?resultCode=${result.resultCode}&pspReference=${result.pspReference}`
+      console.log(
+        "handlePaymentResult: Payment successful, clearing cart and setting success state"
       );
+      clearCart();
+      setPaymentSuccess(true);
+      setPaymentDetails(result);
+      toast.success("Payment successful!");
+      console.log("handlePaymentResult: Updated state", {
+        paymentSuccess: true,
+        paymentDetails: { pspReference: result.pspReference },
+      });
     } else if (result.resultCode === "Pending") {
+      console.log(
+        "handlePaymentResult: Payment pending, redirecting to result page"
+      );
       toast.loading("Payment pending...");
       router.push(
         `/checkout/result?resultCode=${result.resultCode}&pspReference=${result.pspReference}`
       );
     } else {
-      // Payment failed
-      toast.error("Payment failed. Please try again.");
+      console.log("handlePaymentResult: Payment failed", {
+        resultCode: result.resultCode,
+        refusalReason: result.refusalReason,
+      });
+      console.log(
+        "handlePaymentResult: Full result details",
+        JSON.stringify(result, null, 2)
+      );
+      const errorMessage =
+        errorMessages[result.refusalReason] ||
+        result.refusalReason ||
+        "Payment failed. Please try again.";
+      toast.error(errorMessage);
       setPaymentInProgress(false);
+      console.log("handlePaymentResult: Set paymentInProgress to false");
+      if (
+        component &&
+        (result.refusalReason === "CVC Declined" ||
+          result.refusalReason === "Refused")
+      ) {
+        console.log("handlePaymentResult: Resetting Drop-in component");
+        component.reset?.();
+      }
     }
   };
 
   const handleError = (error) => {
-    console.error("Adyen error:", error);
+    console.error("handleError: Adyen error occurred", {
+      error: error.message,
+    });
     toast.error("Payment error occurred. Please try again.");
     setPaymentInProgress(false);
+    console.log("handleError: Set paymentInProgress to false");
   };
 
   const handleGoBack = () => {
+    console.log("handleGoBack: Navigating back to /cart");
     router.push("/cart");
   };
 
+  console.log("CheckoutPage: Rendering UI based on state", {
+    mounted,
+    paymentSuccess,
+    itemsCount: items.length,
+  });
+
   if (!mounted) {
+    console.log("CheckoutPage: Rendering loading spinner (not mounted)");
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gold"></div>
@@ -227,7 +558,8 @@ const CheckoutPage = () => {
     );
   }
 
-  if (items.length === 0) {
+  if (items.length === 0 && !paymentSuccess) {
+    console.log("CheckoutPage: Rendering empty cart UI");
     return (
       <div className="min-h-screen flex items-center justify-center">
         <motion.div
@@ -249,6 +581,69 @@ const CheckoutPage = () => {
       </div>
     );
   }
+
+  if (paymentSuccess) {
+    console.log("CheckoutPage: Rendering success UI", {
+      pspReference: paymentDetails?.pspReference,
+    });
+    return (
+      <div className="min-h-screen flex items-center justify-center py-8">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 text-center"
+        >
+          <div className="bg-slate rounded-xl p-8 premium-glow">
+            <CheckCircle className="w-20 h-20 text-emerald mx-auto mb-6" />
+            <h1 className="font-cinzel font-bold text-white text-4xl mb-4">
+              Thank You!
+            </h1>
+            <p className="text-xl text-gray-400 mb-4">
+              Your payment was successful.
+            </p>
+            <p className="text-lg text-gray-400 mb-6">
+              Transaction ID: {paymentDetails?.pspReference || "N/A"}
+            </p>
+            <p className="text-lg text-gray-400 mb-8">
+              We've received your order and will send a confirmation email soon.
+            </p>
+            <div className="flex justify-center gap-4">
+              <Button
+                onClick={() => {
+                  console.log(
+                    "CheckoutPage: Continue Shopping button clicked, navigating to /products"
+                  );
+                  router.push("/products");
+                }}
+                className="bg-gold text-black hover:bg-yellow-500"
+              >
+                Continue Shopping
+              </Button>
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  console.log(
+                    "CheckoutPage: View Orders button clicked, navigating to /orders"
+                  );
+                  router.push("/orders");
+                }}
+              >
+                View Orders
+              </Button>
+            </div>
+          </div>
+        </motion.div>
+      </div>
+    );
+  }
+
+  console.log("CheckoutPage: Rendering checkout UI", {
+    loading,
+    showPaymentForm,
+    paymentInProgress,
+    sessionAvailable: !!sessionRef.current,
+  });
 
   return (
     <div className="min-h-screen py-8">
@@ -297,6 +692,9 @@ const CheckoutPage = () => {
                       alt={item.name}
                       className="w-12 h-12 object-cover rounded"
                       onError={(e) => {
+                        console.log("CheckoutPage: Image load error for item", {
+                          itemId: item.id,
+                        });
                         e.target.src = "/images/placeholder-product.jpg";
                       }}
                     />
@@ -359,14 +757,23 @@ const CheckoutPage = () => {
                   </span>
                 </div>
               ) : (
-                <div
-                  ref={dropinRef}
-                  className={`adyen-checkout-container ${
-                    paymentInProgress ? "pointer-events-none opacity-50" : ""
-                  }`}
-                />
+                showPaymentForm && (
+                  <div
+                    ref={dropinRef}
+                    className={`adyen-checkout-container ${
+                      paymentInProgress || !sessionRef.current
+                        ? "pointer-events-none opacity-50"
+                        : ""
+                    }`}
+                  />
+                )
               )}
-
+              {!sessionRef.current && !loading && (
+                <div className="mt-4 flex items-center justify-center text-gold">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gold mr-2"></div>
+                  Preparing payment session...
+                </div>
+              )}
               {paymentInProgress && (
                 <div className="mt-4 flex items-center justify-center text-gold">
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gold mr-2"></div>
