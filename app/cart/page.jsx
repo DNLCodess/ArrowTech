@@ -1,13 +1,17 @@
 "use client";
+
 import { motion } from "framer-motion";
 import { Trash2, Plus, Minus, ShoppingBag } from "lucide-react";
-i;
-import { useEffect } from "react";
-import Button from "../../src/components/ui/Button";
-import { useCartStore } from "../../src/store/cart";
-import { formatPrice } from "../../src/lib/utils";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import Button from "../../components/ui/Button";
+import { useCartStore } from "../../store/cart";
+import { formatPrice } from "../../lib/utils";
 
 const CartPage = () => {
+  const router = useRouter();
+  const [mounted, setMounted] = useState(false);
+
   const items = useCartStore((state) => state.items);
   const removeItem = useCartStore((state) => state.removeItem);
   const updateQuantity = useCartStore((state) => state.updateQuantity);
@@ -20,10 +24,26 @@ const CartPage = () => {
   const total = totalFn();
   const itemsCount = itemsCountFn();
 
+  // Handle hydration
   useEffect(() => {
-    console.log("Cart items:", items);
-    console.log("Total:", total);
-  }, [items, total]);
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (mounted) {
+      console.log("Cart items:", items);
+      console.log("Total:", total);
+    }
+  }, [items, total, mounted]);
+
+  // Prevent hydration mismatch
+  if (!mounted) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gold"></div>
+      </div>
+    );
+  }
 
   const handleCheckout = () => {
     if (total <= 0) {
@@ -32,7 +52,11 @@ const CartPage = () => {
       );
       return;
     }
-    window.location.href = "/checkout";
+    router.push("/checkout");
+  };
+
+  const handleContinueShopping = () => {
+    router.push("/products");
   };
 
   if (items.length === 0) {
@@ -50,12 +74,12 @@ const CartPage = () => {
           <p className="text-xl text-gray-400 mb-8">
             Discover our premium collection and add some products to your cart.
           </p>
-          <Button onClick={() => (window.location.href = "/products")}>
-            Continue Shopping
-          </Button>
-          <Button onClick={resetCart} className="mt-4">
-            Reset Cart (Debug)
-          </Button>
+          <div className="space-y-4">
+            <Button onClick={handleContinueShopping}>Continue Shopping</Button>
+            <Button onClick={resetCart} variant="secondary">
+              Reset Cart (Debug)
+            </Button>
+          </div>
         </motion.div>
       </div>
     );
@@ -91,16 +115,21 @@ const CartPage = () => {
               >
                 <div className="flex items-center space-x-6">
                   <img
-                    src={item.images[0]}
+                    src={item.images?.[0] || "/images/placeholder-product.jpg"}
                     alt={item.name}
                     className="w-24 h-24 object-cover rounded-lg"
+                    onError={(e) => {
+                      e.target.src = "/images/placeholder-product.jpg";
+                    }}
                   />
                   <div className="flex-1">
                     <h3 className="font-cinzel font-semibold text-white text-lg mb-2">
                       {item.name}
                     </h3>
                     <p className="text-gray-400 text-sm mb-2">
-                      {item.description.substring(0, 100)}...
+                      {item.description
+                        ? `${item.description.substring(0, 100)}...`
+                        : "No description available"}
                     </p>
                     <p className="text-2xl font-bold text-gold">
                       {item.price
@@ -114,12 +143,12 @@ const CartPage = () => {
                         onClick={() =>
                           updateQuantity(item.id, item.quantity - 1)
                         }
-                        className="p-1 text-gray-400 hover:text-gold transition-colors"
+                        className="p-2 text-gray-400 hover:text-gold transition-colors"
                         disabled={item.quantity <= 1}
                       >
                         <Minus className="w-4 h-4" />
                       </button>
-                      <span className="px-4 py-2 text-white font-semibold">
+                      <span className="px-4 py-2 text-white font-semibold min-w-[3rem] text-center">
                         {item.quantity || 0}
                       </span>
                       <button
@@ -144,6 +173,7 @@ const CartPage = () => {
               </motion.div>
             ))}
           </div>
+
           <div className="lg:col-span-1">
             <motion.div
               initial={{ opacity: 0, x: 20 }}
@@ -156,7 +186,11 @@ const CartPage = () => {
               {total <= 0 ? (
                 <div className="text-center text-gray-400 mb-6">
                   <p>Cart total is invalid. Please reset cart or add items.</p>
-                  <Button onClick={resetCart} className="mt-4">
+                  <Button
+                    onClick={resetCart}
+                    variant="secondary"
+                    className="mt-4"
+                  >
                     Reset Cart
                   </Button>
                 </div>
@@ -194,13 +228,17 @@ const CartPage = () => {
               </Button>
               <div className="mt-4 text-center space-y-2">
                 <button
-                  onClick={() => (window.location.href = "/products")}
+                  onClick={handleContinueShopping}
                   className="text-gold hover:text-gold/80 transition-colors"
                 >
                   Continue Shopping
                 </button>
                 <br />
-                <Button onClick={resetCart} className="w-full">
+                <Button
+                  onClick={resetCart}
+                  variant="secondary"
+                  className="w-full"
+                >
                   Reset Cart (Debug)
                 </Button>
               </div>
