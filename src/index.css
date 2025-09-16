@@ -1,0 +1,75 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url("https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=Montserrat:wght@300;400;500;600;700&display=swap");
+
+@layer base {
+  body {
+    @apply bg-primary text-white font-montserrat;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-gold text-primary hover:bg-gold/90 px-6 py-3 rounded-lg font-semibold transition-all duration-300 hover:scale-105 hover:shadow-lg;
+  }
+
+  .btn-secondary {
+    @apply border-2 border-gold text-gold hover:bg-gold hover:text-primary px-6 py-3 rounded-lg font-semibold transition-all duration-300 hover:scale-105;
+  }
+
+  .card-hover {
+    @apply transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-gold/20;
+  }
+
+  .gradient-text {
+    @apply bg-gradient-to-r from-gold to-yellow-400 bg-clip-text text-transparent;
+  }
+
+  .premium-glow {
+    @apply shadow-lg shadow-gold/10 border border-gold/20;
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #2a2a2a;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c4a484;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #b8956f;
+}
+
+/* Loading animations */
+.loading-spinner {
+  @apply animate-spin-slow text-gold;
+}
+
+/* Premium hover effects */
+.premium-hover {
+  @apply relative overflow-hidden;
+}
+
+.premium-hover::before {
+  content: "";
+  @apply absolute inset-0 bg-gradient-to-r from-transparent via-gold/10 to-transparent transform -skew-x-12 -translate-x-full transition-transform duration-1000;
+}
+
+.premium-hover:hover::before {
+  @apply translate-x-full;
+}
