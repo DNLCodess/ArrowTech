@@ -11,21 +11,36 @@
       "static/chunks/main-app.js",
       "static/chunks/app/not-found.js"
     ],
-    "/checkout/page": [
+    "/products/[id]/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/checkout/page.js"
+      "static/css/app/products/[id]/page.css",
+      "static/chunks/app/products/[id]/page.js"
+    ],
+    "/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/page.js"
     ],
     "/products/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
       "static/chunks/app/products/page.js"
     ],
-    "/products/[id]/page": [
+    "/checkout/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/css/app/products/[id]/page.css",
-      "static/chunks/app/products/[id]/page.js"
+      "static/chunks/app/checkout/page.js"
+    ],
+    "/_not-found/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/_not-found/page.js"
+    ],
+    "/api/checkout/create-session/route": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/api/checkout/create-session/route.js"
     ]
   }
 }

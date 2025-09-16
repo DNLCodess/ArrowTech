@@ -55,28 +55,10 @@ const Header = () => {
             {/* Desktop Navigation */}
             <nav className="hidden md:flex items-center space-x-8">
               <a
-                href="/"
-                className="text-white hover:text-gold transition-colors"
-              >
-                Home
-              </a>
-              <a
                 href="/products"
                 className="text-white hover:text-gold transition-colors"
               >
                 Products
-              </a>
-              <a
-                href="/about"
-                className="text-white hover:text-gold transition-colors"
-              >
-                About
-              </a>
-              <a
-                href="/contact"
-                className="text-white hover:text-gold transition-colors"
-              >
-                Contact
               </a>
             </nav>
 

@@ -72,3 +72,218 @@
 .premium-hover:hover::before {
   @apply translate-x-full;
 }
+.adyen-checkout-container {
+  --adyen-checkout-primary-color: #c4a484;
+  --adyen-checkout-primary-color-hover: #b8956e;
+  --adyen-checkout-secondary-color: #ffffff;
+  --adyen-checkout-background-color: transparent;
+  --adyen-checkout-border-color: rgba(196, 164, 132, 0.3);
+  --adyen-checkout-border-radius: 8px;
+  --adyen-checkout-font-family: "Inter", sans-serif;
+}
+
+/* Payment Method Cards */
+.adyen-checkout__payment-method {
+  background: rgba(30, 41, 59, 0.5) !important;
+  border: 1px solid rgba(196, 164, 132, 0.2) !important;
+  border-radius: 12px !important;
+  margin-bottom: 12px !important;
+  transition: all 0.3s ease !important;
+}
+
+.adyen-checkout__payment-method:hover {
+  border-color: rgba(196, 164, 132, 0.4) !important;
+  box-shadow: 0 0 20px rgba(196, 164, 132, 0.1) !important;
+}
+
+.adyen-checkout__payment-method--selected {
+  border-color: #c4a484 !important;
+  box-shadow: 0 0 20px rgba(196, 164, 132, 0.2) !important;
+}
+
+/* Input Fields */
+.adyen-checkout__input {
+  background: rgba(30, 41, 59, 0.7) !important;
+  border: 1px solid rgba(196, 164, 132, 0.3) !important;
+  border-radius: 8px !important;
+  color: #ffffff !important;
+  font-size: 16px !important;
+  padding: 12px 16px !important;
+  transition: all 0.3s ease !important;
+}
+
+.adyen-checkout__input:focus {
+  border-color: #c4a484 !important;
+  box-shadow: 0 0 0 2px rgba(196, 164, 132, 0.2) !important;
+  outline: none !important;
+}
+
+.adyen-checkout__input--error {
+  border-color: #ff6b6b !important;
+}
+
+.adyen-checkout__input--valid {
+  border-color: #51cf66 !important;
+}
+
+/* Labels */
+.adyen-checkout__label {
+  color: #ffffff !important;
+  font-weight: 500 !important;
+  margin-bottom: 6px !important;
+}
+
+/* Placeholders */
+.adyen-checkout__input::placeholder {
+  color: #9ca3af !important;
+}
+
+/* Error Messages */
+.adyen-checkout__error-text {
+  color: #ff6b6b !important;
+  font-size: 14px !important;
+  margin-top: 4px !important;
+}
+
+/* Pay Button */
+.adyen-checkout__button {
+  background: linear-gradient(135deg, #c4a484 0%, #b8956e 100%) !important;
+  border: none !important;
+  border-radius: 8px !important;
+  color: #000000 !important;
+  font-weight: 600 !important;
+  font-size: 16px !important;
+  padding: 14px 24px !important;
+  transition: all 0.3s ease !important;
+  width: 100% !important;
+  margin-top: 16px !important;
+}
+
+.adyen-checkout__button:hover {
+  background: linear-gradient(135deg, #b8956e 0%, #a68b64 100%) !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 16px rgba(196, 164, 132, 0.3) !important;
+}
+
+.adyen-checkout__button:disabled {
+  background: #374151 !important;
+  color: #9ca3af !important;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+/* Loading Spinner */
+.adyen-checkout__spinner {
+  border-color: #c4a484 transparent #c4a484 transparent !important;
+}
+
+/* Payment Method Headers */
+.adyen-checkout__payment-method__header {
+  color: #ffffff !important;
+  font-weight: 600 !important;
+}
+
+/* Credit Card Icons */
+.adyen-checkout__card__cardNumber__brandIcon {
+  filter: brightness(1.2) !important;
+}
+
+/* Expiry and CVC Fields */
+.adyen-checkout__field-group {
+  gap: 12px !important;
+}
+
+/* Security Features */
+.adyen-checkout__security-features {
+  color: #9ca3af !important;
+  font-size: 12px !important;
+  margin-top: 8px !important;
+}
+
+/* QR Codes for Mobile Payments */
+.adyen-checkout__qr-loader {
+  background: rgba(30, 41, 59, 0.7) !important;
+  border-radius: 8px !important;
+}
+
+/* APMs (Alternative Payment Methods) */
+.adyen-checkout__payment-method__name {
+  color: #ffffff !important;
+  font-weight: 500 !important;
+}
+
+.adyen-checkout__payment-method__details {
+  color: #9ca3af !important;
+}
+
+/* Redirect Messages */
+.adyen-checkout__status {
+  background: rgba(30, 41, 59, 0.7) !important;
+  border: 1px solid rgba(196, 164, 132, 0.3) !important;
+  border-radius: 8px !important;
+  color: #ffffff !important;
+  padding: 16px !important;
+}
+
+/* 3DS2 Challenge */
+.adyen-checkout__threeds2__challenge {
+  background: rgba(0, 0, 0, 0.8) !important;
+  border-radius: 12px !important;
+}
+
+/* Stored Payment Methods */
+.adyen-checkout__payment-method--stored {
+  border-color: rgba(81, 207, 102, 0.3) !important;
+}
+
+.adyen-checkout__payment-method--stored
+  .adyen-checkout__payment-method__header {
+  color: #51cf66 !important;
+}
+
+/* Custom Checkbox Styles */
+.adyen-checkout__checkbox {
+  accent-color: #c4a484 !important;
+}
+
+.adyen-checkout__checkbox__label {
+  color: #ffffff !important;
+  font-size: 14px !important;
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
+  .adyen-checkout__payment-method {
+    margin-bottom: 8px !important;
+  }
+
+  .adyen-checkout__input {
+    font-size: 16px !important; /* Prevents iOS zoom */
+    padding: 12px 14px !important;
+  }
+
+  .adyen-checkout__button {
+    padding: 16px 24px !important;
+    font-size: 16px !important;
+  }
+}
+
+/* Dark Theme Enhancements */
+.adyen-checkout__payment-method__radio {
+  filter: brightness(1.5) !important;
+}
+
+/* Validation States */
+.adyen-checkout__field--valid .adyen-checkout__input {
+  border-color: #51cf66 !important;
+}
+
+.adyen-checkout__field--error .adyen-checkout__input {
+  border-color: #ff6b6b !important;
+}
+
+/* Focus Ring */
+.adyen-checkout__input:focus-visible {
+  outline: 2px solid #c4a484 !important;
+  outline-offset: 2px !important;
+}

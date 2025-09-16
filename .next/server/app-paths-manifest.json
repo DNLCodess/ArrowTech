@@ -1,5 +1,6 @@
 {
-  "/products/page": "app/products/page.js",
+  "/api/checkout/create-session/route": "app/api/checkout/create-session/route.js",
   "/products/[id]/page": "app/products/[id]/page.js",
+  "/products/page": "app/products/page.js",
   "/checkout/page": "app/checkout/page.js"
 }
