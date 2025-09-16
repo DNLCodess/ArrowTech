@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import { CheckCircle, XCircle, Clock, ArrowRight } from "lucide-react";
-import Button from "../../../components/ui/Button";
+import Button from "../../../src/components/ui/Button";
 
 const CheckoutResultPage = () => {
   const router = useRouter();
