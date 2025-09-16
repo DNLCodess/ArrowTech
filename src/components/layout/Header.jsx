@@ -1,36 +1,37 @@
-import { useState } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { Search, ShoppingCart, User, Menu, X, ArrowRight } from 'lucide-react'
-import { useCartStore } from '../../store/cart'
-import { useAuthStore } from '../../store/auth'
-import { useProductStore } from '../../store/products'
-import Button from '../ui/Button'
-import Cart from '../cart/Cart'
-import AuthModal from '../auth/AuthModal'
+"use client";
+import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Search, ShoppingCart, User, Menu, X, ArrowRight } from "lucide-react";
+import { useCartStore } from "../../store/cart";
+import { useAuthStore } from "../../store/auth";
+import { useProductStore } from "../../store/products";
+import Button from "../ui/Button";
+import Cart from "../cart/Cart";
+import AuthModal from "../auth/AuthModal";
 
 const Header = () => {
-  const [isMenuOpen, setIsMenuOpen] = useState(false)
-  const [isSearchOpen, setIsSearchOpen] = useState(false)
-  const [showAuthModal, setShowAuthModal] = useState(false)
-  const [searchQuery, setSearchQuery] = useState('')
-  
-  const { toggleCart, itemsCount } = useCartStore()
-  const { isAuthenticated, user } = useAuthStore()
-  const { setSearchQuery: setStoreSearchQuery } = useProductStore()
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const { toggleCart, itemsCount } = useCartStore();
+  const { isAuthenticated, user } = useAuthStore();
+  const { setSearchQuery: setStoreSearchQuery } = useProductStore();
 
   const handleSearch = (e) => {
-    e.preventDefault()
-    setStoreSearchQuery(searchQuery)
-    setIsSearchOpen(false)
+    e.preventDefault();
+    setStoreSearchQuery(searchQuery);
+    setIsSearchOpen(false);
     // Navigate to products page if not already there
-    if (window.location.pathname !== '/products') {
-      window.location.href = '/products'
+    if (window.location.pathname !== "/products") {
+      window.location.href = "/products";
     }
-  }
+  };
 
   return (
     <>
-      <motion.header 
+      <motion.header
         initial={{ y: -100 }}
         animate={{ y: 0 }}
         className="fixed top-0 left-0 right-0 z-50 bg-primary/80 backdrop-blur-md border-b border-gold/20"
@@ -38,7 +39,7 @@ const Header = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
-            <motion.a 
+            <motion.a
               href="/"
               className="flex items-center space-x-2"
               whileHover={{ scale: 1.05 }}
@@ -46,15 +47,37 @@ const Header = () => {
               <div className="p-2 bg-gradient-to-br from-gold to-yellow-400 rounded-lg">
                 <ArrowRight className="w-6 h-6 text-primary" />
               </div>
-              <span className="text-xl font-cinzel font-bold gradient-text">ArrowTech</span>
+              <span className="text-xl font-cinzel font-bold gradient-text">
+                ArrowTech
+              </span>
             </motion.a>
 
             {/* Desktop Navigation */}
             <nav className="hidden md:flex items-center space-x-8">
-              <a href="/" className="text-white hover:text-gold transition-colors">Home</a>
-              <a href="/products" className="text-white hover:text-gold transition-colors">Products</a>
-              <a href="/about" className="text-white hover:text-gold transition-colors">About</a>
-              <a href="/contact" className="text-white hover:text-gold transition-colors">Contact</a>
+              <a
+                href="/"
+                className="text-white hover:text-gold transition-colors"
+              >
+                Home
+              </a>
+              <a
+                href="/products"
+                className="text-white hover:text-gold transition-colors"
+              >
+                Products
+              </a>
+              <a
+                href="/about"
+                className="text-white hover:text-gold transition-colors"
+              >
+                About
+              </a>
+              <a
+                href="/contact"
+                className="text-white hover:text-gold transition-colors"
+              >
+                Contact
+              </a>
             </nav>
 
             {/* Right Side Actions */}
@@ -105,7 +128,11 @@ const Header = () => {
                 onClick={() => setIsMenuOpen(!isMenuOpen)}
                 className="md:hidden p-2 text-white hover:text-gold transition-colors"
               >
-                {isMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+                {isMenuOpen ? (
+                  <X className="w-5 h-5" />
+                ) : (
+                  <Menu className="w-5 h-5" />
+                )}
               </motion.button>
             </div>
           </div>
@@ -116,7 +143,7 @@ const Header = () => {
           {isSearchOpen && (
             <motion.div
               initial={{ height: 0, opacity: 0 }}
-              animate={{ height: 'auto', opacity: 1 }}
+              animate={{ height: "auto", opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
               className="border-t border-gold/20 bg-slate/50 backdrop-blur-md"
             >
@@ -148,15 +175,35 @@ const Header = () => {
           {isMenuOpen && (
             <motion.div
               initial={{ height: 0, opacity: 0 }}
-              animate={{ height: 'auto', opacity: 1 }}
+              animate={{ height: "auto", opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
               className="md:hidden border-t border-gold/20 bg-slate/50 backdrop-blur-md"
             >
               <nav className="px-4 py-4 space-y-4">
-                <a href="/" className="block text-white hover:text-gold transition-colors">Home</a>
-                <a href="/products" className="block text-white hover:text-gold transition-colors">Products</a>
-                <a href="/about" className="block text-white hover:text-gold transition-colors">About</a>
-                <a href="/contact" className="block text-white hover:text-gold transition-colors">Contact</a>
+                <a
+                  href="/"
+                  className="block text-white hover:text-gold transition-colors"
+                >
+                  Home
+                </a>
+                <a
+                  href="/products"
+                  className="block text-white hover:text-gold transition-colors"
+                >
+                  Products
+                </a>
+                <a
+                  href="/about"
+                  className="block text-white hover:text-gold transition-colors"
+                >
+                  About
+                </a>
+                <a
+                  href="/contact"
+                  className="block text-white hover:text-gold transition-colors"
+                >
+                  Contact
+                </a>
               </nav>
             </motion.div>
           )}
@@ -167,12 +214,12 @@ const Header = () => {
       <Cart />
 
       {/* Auth Modal */}
-      <AuthModal 
-        isOpen={showAuthModal} 
-        onClose={() => setShowAuthModal(false)} 
+      <AuthModal
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
       />
     </>
-  )
-}
+  );
+};
 
-export default Header
+export default Header;
