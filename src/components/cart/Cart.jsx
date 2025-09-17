@@ -1,22 +1,20 @@
+"use client";
+
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Plus, Minus, ShoppingBag } from "lucide-react";
-import { useCartStore } from "../../store/cart";
+import {
+  useCartStore,
+  useCartItemsCount,
+  useCartTotal,
+} from "../../store/cart";
 import { formatPrice } from "../../lib/utils";
 import Button from "../ui/Button";
 
 const Cart = () => {
-  const items = useCartStore((state) => state.items);
-  const isOpen = useCartStore((state) => state.isOpen);
-  const closeCart = useCartStore((state) => state.closeCart);
-  const removeItem = useCartStore((state) => state.removeItem);
-  const updateQuantity = useCartStore((state) => state.updateQuantity);
-
-  // Fixed: Get computed values by calling the functions
-  const totalFn = useCartStore((state) => state.total);
-  const itemsCountFn = useCartStore((state) => state.itemsCount);
-
-  const total = totalFn();
-  const itemsCount = itemsCountFn();
+  const { items, isOpen, closeCart, removeItem, updateQuantity } =
+    useCartStore();
+  const total = useCartTotal(); // Use selector for total
+  const itemsCount = useCartItemsCount(); // Use selector for items count
 
   const handleCheckout = () => {
     closeCart();
@@ -75,17 +73,23 @@ const Cart = () => {
                     className="flex items-center space-x-4 p-4 bg-primary rounded-lg premium-glow"
                   >
                     <img
-                      src={item.images[0]}
+                      src={
+                        item.images?.[0] || "/images/placeholder-product.jpg"
+                      }
                       alt={item.name}
                       className="w-16 h-16 object-cover rounded-lg"
+                      onError={(e) => {
+                        e.target.src = "/images/placeholder-product.jpg";
+                      }}
                     />
-
                     <div className="flex-1">
                       <h3 className="font-semibold text-white text-sm">
                         {item.name}
                       </h3>
                       <p className="text-gold font-semibold">
-                        {formatPrice(item.price)}
+                        {item.price
+                          ? formatPrice(item.price)
+                          : "Price Unavailable"}
                       </p>
                     </div>
 
@@ -100,9 +104,8 @@ const Cart = () => {
                         <Minus className="w-4 h-4" />
                       </button>
                       <span className="w-8 text-center text-white font-semibold">
-                        {item.quantity}
+                        {item.quantity || 0}
                       </span>
-
                       <button
                         onClick={() =>
                           updateQuantity(item.id, item.quantity + 1)

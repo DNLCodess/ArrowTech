@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Search, ShoppingCart, User, Menu, X, ArrowRight } from "lucide-react";
-import { useCartStore } from "../../store/cart";
+import { useCartStore, useCartItemsCount } from "../../store/cart"; // Import the selector
 import { useAuthStore } from "../../store/auth";
 import { useProductStore } from "../../store/products";
 import Button from "../ui/Button";
@@ -15,9 +15,10 @@ const Header = () => {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
-  const { toggleCart, itemsCount } = useCartStore();
+  const { toggleCart } = useCartStore(); // Destructure toggleCart from useCartStore
   const { isAuthenticated, user } = useAuthStore();
   const { setSearchQuery: setStoreSearchQuery } = useProductStore();
+  const itemsCount = useCartItemsCount(); // Use the selector to get items count
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -82,15 +83,13 @@ const Header = () => {
                 className="relative p-2 text-white hover:text-gold transition-colors"
               >
                 <ShoppingCart className="w-5 h-5" />
-                {itemsCount > 0 && (
-                  <motion.span
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    className="absolute -top-1 -right-1 bg-gold text-primary text-xs rounded-full w-5 h-5 flex items-center justify-center font-semibold"
-                  >
-                    {itemsCount}
-                  </motion.span>
-                )}
+                <motion.span
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  className="absolute -top-1 -right-1 bg-gold text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-semibold"
+                >
+                  {itemsCount}
+                </motion.span>
               </motion.button>
 
               {/* User */}

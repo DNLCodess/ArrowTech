@@ -1,9 +1,6 @@
 {
-  "/api/checkout/create-session/route": "app/api/checkout/create-session/route.js",
-  "/api/checkout/submit-payment/route": "app/api/checkout/submit-payment/route.js",
   "/products/page": "app/products/page.js",
+  "/products/[id]/page": "app/products/[id]/page.js",
   "/checkout/page": "app/checkout/page.js",
-  "/checkout/result/page": "app/checkout/result/page.js",
-  "/cart/page": "app/cart/page.js",
-  "/products/[id]/page": "app/products/[id]/page.js"
+  "/cart/page": "app/cart/page.js"
 }

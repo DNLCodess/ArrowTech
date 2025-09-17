@@ -15,16 +15,16 @@ export async function POST(request) {
     // According to Adyen docs, the session request should include:
     const sessionRequest = {
       amount: {
-        value: amount, // Amount in minor units (cents)
-        currency: currency,
+        value: amount, // Amount in minor units (pence for GBP)
+        currency: currency, // Now supports GBP
       },
       reference: `order-${Date.now()}-${Math.random()
         .toString(36)
         .substr(2, 9)}`,
       returnUrl: returnUrl,
       merchantAccount: process.env.ADYEN_MERCHANT_ACCOUNT,
-      countryCode: "US",
-      shopperLocale: "en-US", // Note: format is en-US not en_US
+      countryCode: "GB", // Changed to GB for UK
+      shopperLocale: "en-GB", // Changed to en-GB for UK locale
       channel: "Web",
       // Add optional metadata
       metadata: {

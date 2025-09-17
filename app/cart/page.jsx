@@ -5,24 +5,20 @@ import { Trash2, Plus, Minus, ShoppingBag } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Button from "../../src/components/ui/Button";
-import { useCartStore } from "../../src/store/cart";
+import {
+  useCartStore,
+  useCartItemsCount,
+  useCartTotal,
+} from "../../src/store/cart"; // Import selectors
 import { formatPrice } from "../../src/lib/utils";
 
 const CartPage = () => {
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
 
-  const items = useCartStore((state) => state.items);
-  const removeItem = useCartStore((state) => state.removeItem);
-  const updateQuantity = useCartStore((state) => state.updateQuantity);
-  const resetCart = useCartStore((state) => state.resetCart);
-
-  // Fixed: Get computed values by calling the functions
-  const totalFn = useCartStore((state) => state.total);
-  const itemsCountFn = useCartStore((state) => state.itemsCount);
-
-  const total = totalFn();
-  const itemsCount = itemsCountFn();
+  const { items, removeItem, updateQuantity, resetCart } = useCartStore(); // Destructure actions
+  const total = useCartTotal(); // Use selector for total
+  const itemsCount = useCartItemsCount(); // Use selector for items count
 
   // Handle hydration
   useEffect(() => {

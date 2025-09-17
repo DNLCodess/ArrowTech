@@ -114,12 +114,12 @@ const CheckoutPage = () => {
       setLoading(true);
       console.log("initPayment: Set loading to true");
 
-      // Create payment session
+      // Create payment session with GBP currency
       console.log(
         "initPayment: Sending request to /api/checkout/create-session",
         {
           amount: Math.round(total * 100),
-          currency: "USD",
+          currency: "GBP", // Changed to GBP
           returnUrl: `${window.location.origin}/checkout/result`,
           items: items.map((item) => ({
             id: item.id,
@@ -135,7 +135,7 @@ const CheckoutPage = () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           amount: Math.round(total * 100),
-          currency: "USD",
+          currency: "GBP", // Changed to GBP
           returnUrl: `${window.location.origin}/checkout/result`,
           items: items.map((item) => ({
             id: item.id,
@@ -209,6 +209,22 @@ const CheckoutPage = () => {
             hasHolderName: true,
             holderNameRequired: true,
             billingAddressRequired: false,
+            styles: {
+              base: {
+                color: "#ffffff",
+                fontSize: "16px",
+                fontFamily: '"Inter", sans-serif',
+              },
+              error: {
+                color: "#ff6b6b",
+              },
+              validated: {
+                color: "#51cf66",
+              },
+              placeholder: {
+                color: "#9ca3af",
+              },
+            },
           },
         },
       };
@@ -251,6 +267,11 @@ const CheckoutPage = () => {
           console.log("initPayment: Mounting Drop-in component");
           dropin.mount(dropinRef.current);
           console.log("initPayment: Drop-in mounted successfully");
+
+          // Add custom CSS for white text after mounting
+          setTimeout(() => {
+            addCustomStyles();
+          }, 100);
         } else if (attempts < maxAttempts) {
           attempts++;
           console.log(`initPayment: Mount attempt ${attempts}/${maxAttempts}`);
@@ -282,6 +303,68 @@ const CheckoutPage = () => {
       setLoading(false);
       console.log("initPayment: Set loading to false");
     }
+  };
+
+  // Function to add custom styles for white text
+  const addCustomStyles = () => {
+    const style = document.createElement("style");
+    style.textContent = `
+      .adyen-checkout__input,
+      .adyen-checkout__input--focus,
+      .adyen-checkout__input--valid,
+      .adyen-checkout__input--invalid {
+        color: white !important;
+        background-color: transparent !important;
+        border-color: rgba(255, 255, 255, 0.3) !important;
+      }
+      
+      .adyen-checkout__label__text,
+      .adyen-checkout__label,
+      .adyen-checkout__field__title {
+        color: white !important;
+      }
+      
+      .adyen-checkout__input::placeholder {
+        color: rgba(255, 255, 255, 0.6) !important;
+      }
+      
+      .adyen-checkout__input:focus {
+        border-color: #D4AF37 !important;
+        box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.2) !important;
+      }
+      
+      .adyen-checkout__field--error .adyen-checkout__input {
+        border-color: #ef4444 !important;
+      }
+      
+      .adyen-checkout__field--valid .adyen-checkout__input {
+        border-color: #10b981 !important;
+      }
+      
+      .adyen-checkout__error-text {
+        color: #ef4444 !important;
+      }
+      
+      .adyen-checkout__card__form,
+      .adyen-checkout__payment-method {
+        background-color: transparent !important;
+      }
+      
+      .adyen-checkout__button--pay {
+        background-color: #D4AF37 !important;
+        color: #000000 !important;
+        border: none !important;
+      }
+      
+      .adyen-checkout__button--pay:hover {
+        background-color: #eab308 !important;
+      }
+      
+      .adyen-checkout__spinner__wrapper {
+        background-color: rgba(30, 41, 59, 0.9) !important;
+      }
+    `;
+    document.head.appendChild(style);
   };
 
   const handleSubmit = async (state, component) => {
@@ -724,15 +807,13 @@ const CheckoutPage = () => {
                   <span className="text-emerald">Free</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-400">Tax (8%)</span>
-                  <span className="text-white">
-                    {formatPrice(total * 0.08)}
-                  </span>
+                  <span className="text-gray-400">VAT (20%)</span>
+                  <span className="text-white">{formatPrice(total * 0.2)}</span>
                 </div>
                 <hr className="border-gold/20" />
                 <div className="flex justify-between text-lg font-semibold">
                   <span className="text-white">Total</span>
-                  <span className="text-gold">{formatPrice(total * 1.08)}</span>
+                  <span className="text-gold">{formatPrice(total * 1.2)}</span>
                 </div>
               </div>
             </div>

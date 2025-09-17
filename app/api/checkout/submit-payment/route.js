@@ -1,3 +1,4 @@
+// app/api/checkout/submit-payment/route.js
 import { NextResponse } from "next/server";
 
 export async function POST(request) {
@@ -14,7 +15,7 @@ export async function POST(request) {
     // For Sessions flow, construct the payment request
     const paymentRequest = {
       merchantAccount: process.env.ADYEN_MERCHANT_ACCOUNT,
-      amount: amount, // Use the amount from the request body
+      amount: amount, // Use the amount from the request body (supports GBP)
       reference: `payment-${Date.now()}`,
       paymentMethod: paymentData.paymentMethod,
       returnUrl:
