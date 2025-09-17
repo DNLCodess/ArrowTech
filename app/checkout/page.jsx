@@ -4,31 +4,34 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { ArrowLeft, CreditCard, ShoppingBag, CheckCircle } from "lucide-react";
-import { useCartStore } from "../../src/store/cart";
+import {
+  useCartStore,
+  useCartItemsCount,
+  useCartTotal,
+} from "../../src/store/cart";
 import { formatPrice } from "../../src/lib/utils";
 import Button from "../../src/components/ui/Button";
 import toast from "react-hot-toast";
+
+// Disable prerendering for this page
+export const dynamic = "force-dynamic";
 
 const CheckoutPage = () => {
   console.log("CheckoutPage: Component rendering");
   const router = useRouter();
   const dropinRef = useRef(null);
   const checkoutRef = useRef(null);
-  const sessionRef = useRef(null); // Sole source of truth for session
+  const sessionRef = useRef(null);
   const [mounted, setMounted] = useState(false);
   const [loading, setLoading] = useState(true);
   const [paymentInProgress, setPaymentInProgress] = useState(false);
   const [showPaymentForm, setShowPaymentForm] = useState(false);
-  const [paymentSuccess, setPaymentSuccess] = useState(false); // New state for success UI
-  const [paymentDetails, setPaymentDetails] = useState(null); // Store payment result for success UI
+  const [paymentSuccess, setPaymentSuccess] = useState(false);
+  const [paymentDetails, setPaymentDetails] = useState(null);
 
-  const items = useCartStore((state) => state.items);
-  const clearCart = useCartStore((state) => state.clearCart);
-  const totalFn = useCartStore((state) => state.total);
-  const itemsCountFn = useCartStore((state) => state.itemsCount);
-
-  const total = totalFn();
-  const itemsCount = itemsCountFn();
+  const { items, clearCart } = useCartStore();
+  const total = useCartTotal();
+  const itemsCount = useCartItemsCount();
 
   console.log("CheckoutPage: Initial state", {
     mounted,
@@ -36,7 +39,7 @@ const CheckoutPage = () => {
     paymentInProgress,
     showPaymentForm,
     paymentSuccess,
-    itemsCount: items.length,
+    itemsCount,
     total,
   });
 
@@ -60,7 +63,6 @@ const CheckoutPage = () => {
       return;
     }
 
-    // Redirect to cart if empty and not showing success UI
     if (items.length === 0 && !paymentSuccess) {
       console.log(
         "CheckoutPage: Cart is empty and no payment success, redirecting to /cart"
@@ -70,7 +72,6 @@ const CheckoutPage = () => {
       return;
     }
 
-    // Skip initialization if payment is already successful
     if (paymentSuccess) {
       console.log(
         "CheckoutPage: Payment already successful, skipping initialization"
@@ -78,7 +79,6 @@ const CheckoutPage = () => {
       return;
     }
 
-    // Show payment form first, then initialize payment after a short delay
     console.log("CheckoutPage: Setting showPaymentForm to true");
     setShowPaymentForm(true);
     console.log("CheckoutPage: Scheduling initPayment with 50ms delay");
@@ -91,16 +91,15 @@ const CheckoutPage = () => {
       console.log("CheckoutPage: Cleaning up useEffect, clearing timer");
       clearTimeout(timer);
     };
-  }, [mounted, paymentSuccess]);
+  }, [mounted, paymentSuccess, router, items.length]);
 
   const initPayment = async () => {
     console.log("initPayment: Starting payment initialization", {
-      itemsCount: items.length,
+      itemsCount,
       total,
       paymentSuccess,
     });
 
-    // Guard against empty cart or successful payment
     if (items.length === 0 || paymentSuccess) {
       console.log(
         "initPayment: Skipping due to empty cart or payment already successful"
@@ -114,18 +113,19 @@ const CheckoutPage = () => {
       setLoading(true);
       console.log("initPayment: Set loading to true");
 
-      // Create payment session with GBP currency
       console.log(
         "initPayment: Sending request to /api/checkout/create-session",
         {
           amount: Math.round(total * 100),
-          currency: "GBP", // Changed to GBP
+          currency: "GBP",
           returnUrl: `${window.location.origin}/checkout/result`,
           items: items.map((item) => ({
             id: item.id,
-            description: item.name,
-            amountIncludingTax: Math.round(item.price * item.quantity * 100),
-            quantity: item.quantity,
+            description: item.name || "Unnamed Product",
+            amountIncludingTax: Math.round(
+              (item.price || 0) * (item.quantity || 0) * 100
+            ),
+            quantity: item.quantity || 0,
           })),
         }
       );
@@ -135,13 +135,15 @@ const CheckoutPage = () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           amount: Math.round(total * 100),
-          currency: "GBP", // Changed to GBP
+          currency: "GBP",
           returnUrl: `${window.location.origin}/checkout/result`,
           items: items.map((item) => ({
             id: item.id,
-            description: item.name,
-            amountIncludingTax: Math.round(item.price * item.quantity * 100),
-            quantity: item.quantity,
+            description: item.name || "Unnamed Product",
+            amountIncludingTax: Math.round(
+              (item.price || 0) * (item.quantity || 0) * 100
+            ),
+            quantity: item.quantity || 0,
           })),
         }),
       });
@@ -177,13 +179,11 @@ const CheckoutPage = () => {
         sessionData: sessionData.sessionData ? "exists" : "missing",
       });
 
-      // Store session in ref only
       sessionRef.current = sessionData;
       console.log("initPayment: Session ref updated", {
         sessionId: sessionData.id,
       });
 
-      // Initialize Adyen Checkout
       console.log("initPayment: Importing AdyenCheckout and CSS");
       const { default: AdyenCheckout } = await import("@adyen/adyen-web");
       await import("@adyen/adyen-web/dist/adyen.css");
@@ -258,7 +258,6 @@ const CheckoutPage = () => {
         },
       });
 
-      // Mount with retry logic
       let attempts = 0;
       const maxAttempts = 15;
 
@@ -268,7 +267,6 @@ const CheckoutPage = () => {
           dropin.mount(dropinRef.current);
           console.log("initPayment: Drop-in mounted successfully");
 
-          // Add custom CSS for white text after mounting
           setTimeout(() => {
             addCustomStyles();
           }, 100);
@@ -297,7 +295,7 @@ const CheckoutPage = () => {
           error.message || "Failed to initialize payment. Please try again."
         );
       }
-      sessionRef.current = null; // Clear ref on error
+      sessionRef.current = null;
       console.log("initPayment: Cleared session ref due to error");
     } finally {
       setLoading(false);
@@ -305,7 +303,6 @@ const CheckoutPage = () => {
     }
   };
 
-  // Function to add custom styles for white text
   const addCustomStyles = () => {
     const style = document.createElement("style");
     style.textContent = `
@@ -317,49 +314,39 @@ const CheckoutPage = () => {
         background-color: transparent !important;
         border-color: rgba(255, 255, 255, 0.3) !important;
       }
-      
       .adyen-checkout__label__text,
       .adyen-checkout__label,
       .adyen-checkout__field__title {
         color: white !important;
       }
-      
       .adyen-checkout__input::placeholder {
         color: rgba(255, 255, 255, 0.6) !important;
       }
-      
       .adyen-checkout__input:focus {
         border-color: #D4AF37 !important;
         box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.2) !important;
       }
-      
       .adyen-checkout__field--error .adyen-checkout__input {
         border-color: #ef4444 !important;
       }
-      
       .adyen-checkout__field--valid .adyen-checkout__input {
         border-color: #10b981 !important;
       }
-      
       .adyen-checkout__error-text {
         color: #ef4444 !important;
       }
-      
       .adyen-checkout__card__form,
       .adyen-checkout__payment-method {
         background-color: transparent !important;
       }
-      
       .adyen-checkout__button--pay {
         background-color: #D4AF37 !important;
         color: #000000 !important;
         border: none !important;
       }
-      
       .adyen-checkout__button--pay:hover {
         background-color: #eab308 !important;
       }
-      
       .adyen-checkout__spinner__wrapper {
         background-color: rgba(30, 41, 59, 0.9) !important;
       }
@@ -374,7 +361,6 @@ const CheckoutPage = () => {
     });
 
     try {
-      // Use the ref directly
       const currentSession = sessionRef.current;
       console.log("handleSubmit: Current session from ref", {
         sessionId: currentSession?.id,
@@ -383,7 +369,6 @@ const CheckoutPage = () => {
       setPaymentInProgress(true);
       console.log("handleSubmit: Set paymentInProgress to true");
 
-      // Check if session is available
       if (!currentSession || !currentSession.id) {
         console.error("handleSubmit: Session not available", {
           currentSession,
@@ -415,7 +400,7 @@ const CheckoutPage = () => {
         body: JSON.stringify({
           sessionId: currentSession.id,
           paymentData: state.data,
-          amount: currentSession.amount, // Include the amount from the session
+          amount: currentSession.amount,
         }),
       });
 
@@ -447,8 +432,7 @@ const CheckoutPage = () => {
       console.error("handleSubmit: Payment submission error", {
         error: error.message,
       });
-      const errorMessage = error.message || "Payment failed. Please try again.";
-      toast.error(errorMessage);
+      toast.error(error.message || "Payment failed. Please try again.");
       setPaymentInProgress(false);
       console.log("handleSubmit: Set paymentInProgress to false due to error");
     }
@@ -457,19 +441,15 @@ const CheckoutPage = () => {
   const handleAdditionalDetails = async (state, component) => {
     console.log(
       "handleAdditionalDetails: Starting additional details submission",
-      {
-        state,
-      }
+      { state }
     );
 
     try {
-      // Use the ref directly
       const currentSession = sessionRef.current;
       console.log("handleAdditionalDetails: Current session from ref", {
         sessionId: currentSession?.id,
       });
 
-      // Check if session is available
       if (!currentSession || !currentSession.id) {
         console.error("handleAdditionalDetails: Session not available", {
           currentSession,
@@ -498,6 +478,12 @@ const CheckoutPage = () => {
         status: response.status,
       });
 
+      const result = await response.json();
+      console.log(
+        "handleAdditionalDetails: Submit details response data",
+        result
+      );
+
       if (!response.ok) {
         console.error(
           "handleAdditionalDetails: Additional details submission failed",
@@ -507,12 +493,6 @@ const CheckoutPage = () => {
         );
         throw new Error("Additional details submission failed");
       }
-
-      const result = await response.json();
-      console.log(
-        "handleAdditionalDetails: Submit details response data",
-        result
-      );
 
       if (result.action) {
         console.log("handleAdditionalDetails: Handling Adyen action", {
@@ -535,14 +515,6 @@ const CheckoutPage = () => {
         "handleAdditionalDetails: Set paymentInProgress to false due to error"
       );
     }
-  };
-
-  const handlePaymentCompleted = (result, component) => {
-    console.log(
-      "handlePaymentCompleted: Payment completed callback triggered",
-      { result }
-    );
-    handlePaymentResult(result, component);
   };
 
   const handlePaymentResult = (result, component) => {
@@ -590,10 +562,6 @@ const CheckoutPage = () => {
         resultCode: result.resultCode,
         refusalReason: result.refusalReason,
       });
-      console.log(
-        "handlePaymentResult: Full result details",
-        JSON.stringify(result, null, 2)
-      );
       const errorMessage =
         errorMessages[result.refusalReason] ||
         result.refusalReason ||
@@ -629,7 +597,7 @@ const CheckoutPage = () => {
   console.log("CheckoutPage: Rendering UI based on state", {
     mounted,
     paymentSuccess,
-    itemsCount: items.length,
+    itemsCount,
   });
 
   if (!mounted) {
@@ -731,7 +699,6 @@ const CheckoutPage = () => {
   return (
     <div className="min-h-screen py-8">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -747,12 +714,12 @@ const CheckoutPage = () => {
             Secure Checkout
           </h1>
           <p className="text-xl text-gray-400">
-            Complete your purchase of {itemsCount} items
+            Complete your purchase of {itemsCount}{" "}
+            {itemsCount === 1 ? "item" : "items"}
           </p>
         </motion.div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Order Summary */}
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
@@ -763,8 +730,6 @@ const CheckoutPage = () => {
                 <CreditCard className="w-5 h-5 mr-2" />
                 Order Summary
               </h2>
-
-              {/* Items */}
               <div className="space-y-4 mb-6 max-h-60 overflow-y-auto">
                 {items.map((item) => (
                   <div key={item.id} className="flex items-center space-x-3">
@@ -772,7 +737,7 @@ const CheckoutPage = () => {
                       src={
                         item.images?.[0] || "/images/placeholder-product.jpg"
                       }
-                      alt={item.name}
+                      alt={item.name || "Product"}
                       className="w-12 h-12 object-cover rounded"
                       onError={(e) => {
                         console.log("CheckoutPage: Image load error for item", {
@@ -783,20 +748,23 @@ const CheckoutPage = () => {
                     />
                     <div className="flex-1">
                       <h4 className="text-white text-sm font-medium truncate">
-                        {item.name}
+                        {item.name || "Unnamed Product"}
                       </h4>
                       <p className="text-gray-400 text-xs">
-                        Qty: {item.quantity} × {formatPrice(item.price)}
+                        Qty: {item.quantity || 0} ×{" "}
+                        {typeof item.price === "number" && !isNaN(item.price)
+                          ? formatPrice(item.price)
+                          : "N/A"}
                       </p>
                     </div>
                     <p className="text-gold font-semibold">
-                      {formatPrice(item.price * item.quantity)}
+                      {typeof item.price === "number" && !isNaN(item.price)
+                        ? formatPrice((item.price || 0) * (item.quantity || 0))
+                        : "N/A"}
                     </p>
                   </div>
                 ))}
               </div>
-
-              {/* Totals */}
               <div className="space-y-3 pt-4 border-t border-gold/20">
                 <div className="flex justify-between">
                   <span className="text-gray-400">Subtotal</span>
@@ -819,7 +787,6 @@ const CheckoutPage = () => {
             </div>
           </motion.div>
 
-          {/* Payment Form */}
           <motion.div
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
@@ -829,7 +796,6 @@ const CheckoutPage = () => {
               <h2 className="font-cinzel font-semibold text-white text-xl mb-6">
                 Payment Information
               </h2>
-
               {loading ? (
                 <div className="flex items-center justify-center py-12">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gold mr-3"></div>
