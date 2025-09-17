@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Search, ShoppingCart, User, Menu, X, ArrowRight } from "lucide-react";
 import { useCartStore, useCartItemsCount } from "../../store/cart"; // Import the selector
@@ -14,11 +14,17 @@ const Header = () => {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [isHydrated, setIsHydrated] = useState(false);
 
   const { toggleCart } = useCartStore(); // Destructure toggleCart from useCartStore
   const { isAuthenticated, user } = useAuthStore();
   const { setSearchQuery: setStoreSearchQuery } = useProductStore();
   const itemsCount = useCartItemsCount(); // Use the selector to get items count
+
+  // Fix hydration mismatch by ensuring client-side state is used only after hydration
+  useEffect(() => {
+    setIsHydrated(true);
+  }, []);
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -83,13 +89,16 @@ const Header = () => {
                 className="relative p-2 text-white hover:text-gold transition-colors"
               >
                 <ShoppingCart className="w-5 h-5" />
-                <motion.span
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  className="absolute -top-1 -right-1 bg-gold text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-semibold"
-                >
-                  {itemsCount}
-                </motion.span>
+                {/* Only show cart count after hydration to prevent mismatch */}
+                {isHydrated && itemsCount > 0 && (
+                  <motion.span
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    className="absolute -top-1 -right-1 bg-gold text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-semibold"
+                  >
+                    {itemsCount}
+                  </motion.span>
+                )}
               </motion.button>
 
               {/* User */}

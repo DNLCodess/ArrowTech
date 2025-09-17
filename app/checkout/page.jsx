@@ -363,7 +363,7 @@ const CheckoutPage = () => {
     try {
       const currentSession = sessionRef.current;
       console.log("handleSubmit: Current session from ref", {
-        sessionId: currentSession?.id,
+        sessionId: currentSession,
       });
 
       setPaymentInProgress(true);
@@ -400,6 +400,8 @@ const CheckoutPage = () => {
         body: JSON.stringify({
           sessionId: currentSession.id,
           paymentData: state.data,
+          locale: "en-US",
+          countryCode: "GB",
           amount: currentSession.amount,
         }),
       });

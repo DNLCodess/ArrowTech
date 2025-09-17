@@ -18,6 +18,7 @@ export async function POST(request) {
       amount: amount, // Use the amount from the request body (supports GBP)
       reference: `payment-${Date.now()}`,
       paymentMethod: paymentData.paymentMethod,
+      countryCode: "GB",
       returnUrl:
         paymentData.returnUrl ||
         `${process.env.NEXT_PUBLIC_BASE_URL}/checkout/result`,
